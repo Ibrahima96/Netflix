@@ -25,16 +25,18 @@ if (!empty($_POST['email']) && !empty($_POST['password']) && !empty($_POST['pass
 		exit();
 	}
 
+	//verifions si l'email a t-elle un doublons
 	$req = $bdd->prepare("SELECT COUNT(*) AS numberEmail FROM user WHERE email = ?");
 	$req->execute([$email]);
 	$resulte = $req->fetch();
+
 
 	if ($resulte['numberEmail'] != 0) {
 		header("location: inscription.php?error=1&message=Cette adresse email est déjà utilisée.");
 		exit();
 	}
 
-	// Chiffrement sécurisé
+	// Chiffrement sécurisé (hash)
 	$password = password_hash($password, PASSWORD_DEFAULT);
 	// Génération d'un secret unique
 	$secret = bin2hex(random_bytes(32));
