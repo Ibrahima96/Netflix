@@ -1,7 +1,7 @@
 <?php
 session_start();
-
 require_once 'src/option.php';
+
 if (!empty($_POST['email']) && !empty($_POST['password'])) {
 
     $email    = htmlspecialchars(trim($_POST['email']));
@@ -15,7 +15,7 @@ if (!empty($_POST['email']) && !empty($_POST['password'])) {
         exit();
     }
 
-    // Vérification de l'utilisateur
+    // Récupération de l'utilisateur
     $req = $bdd->prepare("SELECT * FROM user WHERE email = ?");
     $req->execute([$email]);
     $user = $req->fetch();
@@ -25,16 +25,15 @@ if (!empty($_POST['email']) && !empty($_POST['password'])) {
         exit();
     }
 
-    // Vérification du mot de passe (version ancienne hash)
-    $hashedInput = "aqui" . sha1($password . "123") . "25";
-
-    if ($hashedInput === $user['password']) {
+    // Vérification du mot de passe sécurisé
+    if (password_verify($password, $user['password'])) {
         $_SESSION["connect"] = 1;
         $_SESSION['email'] = $user['email'];
-		if (isset($_POST['auto'])) {
-			
-			setcookie('auth',$user['secret'],time()+364*24*3600,"/","",false,true);
-		}
+
+        if (isset($_POST['auto'])) {
+            setcookie('auth', $user['secret'], time() + 364 * 24 * 3600, "/", "", false, true);
+        }
+
         header("Location: index.php?success=1");
         exit();
     } else {
@@ -43,6 +42,7 @@ if (!empty($_POST['email']) && !empty($_POST['password'])) {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html>

@@ -1,60 +1,52 @@
 <?php
 session_start();
 require_once 'src/option.php';
+
 if (isset($_SESSION["connect"])) {
 	header("location:index.php");
 	exit();
 }
-if (!empty($_POST['email']) && !empty($_POST['password']) && !empty($_POST['password_two'])) {
-	// connexion a la bdd
-	require_once 'src/connexion.php';
-	// recuperation des varibles
-	$email			= htmlspecialchars($_POST['email']);
-	$password		= htmlspecialchars($_POST['password']);
-	$passwordTwo	= htmlspecialchars($_POST['password_two']);
 
-	// le mots de passe est-il differents ?
-	if ($password != $passwordTwo) {
-		header("location: inscription.php?error=1&message=Vos mots de passe ne sont pas identique !");
+if (!empty($_POST['email']) && !empty($_POST['password']) && !empty($_POST['password_two'])) {
+
+	require_once 'src/connexion.php';
+
+	$email = htmlspecialchars(trim($_POST['email']));
+	$password = $_POST['password'];
+	$passwordTwo = $_POST['password_two'];
+
+	if ($password !== $passwordTwo) {
+		header("location: inscription.php?error=1&message=Vos mots de passe ne sont pas identiques !");
 		exit();
 	}
-
-	// l'adresse email est-elle correct 
 
 	if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-		header("location: inscription.php?error=1&message=Votre adresse email est invalide .");
+		header("location: inscription.php?error=1&message=Votre adresse email est invalide.");
 		exit();
 	}
 
-	// Adresse email est-elle un doublon 
-
-	$req = $bdd->prepare("SELECT COUNT(*) AS numberEmail FROM user  WHERE email = ?");
+	$req = $bdd->prepare("SELECT COUNT(*) AS numberEmail FROM user WHERE email = ?");
 	$req->execute([$email]);
+	$resulte = $req->fetch();
 
-	while ($resulte = $req->fetch()) {
-		if ($resulte['numberEmail'] != 0) {
-			header("location: inscription.php?error=1&message=cette adresse email  est déja  utiliser par un autre .");
-			exit();
-		}
+	if ($resulte['numberEmail'] != 0) {
+		header("location: inscription.php?error=1&message=Cette adresse email est déjà utilisée.");
+		exit();
 	}
 
-	//chiffrement du mots de passe 
+	// Chiffrement sécurisé
+	$password = password_hash($password, PASSWORD_DEFAULT);
+	// Génération d'un secret unique
+	$secret = bin2hex(random_bytes(32));
 
-	$password = "aqui" . sha1($password . "123") . "25";  //OR   $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-	// Secret
-	$secret = sha1($email) . time();					// OR $secret = bin2hex(random_bytes(32)); // 64 caractères aléatoires sécurisés
-
-	$secret = sha1($secret) . time();
-
-	// Ajouter les utilisateur
-	$req = $bdd->prepare(" INSERT INTO user (email,password,secret) VALUES (?,?,?)");
+	$req = $bdd->prepare("INSERT INTO user (email, password, secret) VALUES (?, ?, ?)");
 	$req->execute([$email, $password, $secret]);
-	header("location:inscription.php?succes=1");
+
+	header("location: inscription.php?succes=1");
 	exit();
 }
-
-
 ?>
+
 
 <!DOCTYPE html>
 <html>
